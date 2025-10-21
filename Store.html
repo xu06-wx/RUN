@@ -1,0 +1,348 @@
+<!DOCTYPE html> 
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>遊戲商店 Store</title>
+<style>
+  body {
+    margin: 0;
+    font-family: "Microsoft JhengHei", sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+    overflow-x: hidden;
+  }
+
+  header {
+    text-align: center;
+    padding: 20px 0;
+    background: rgba(0,0,0,0.4);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 30px;
+    letter-spacing: 2px;
+  }
+
+  /* 🔹返回按鈕（統一樣式） */
+  .nav-buttons {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 20;
+  }
+  .nav-buttons a {
+    text-decoration: none;
+    color: white;
+    background: rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 12px;
+    padding: 8px 18px;
+    font-size: 16px;
+    transition: background 0.3s, transform 0.2s;
+  }
+  .nav-buttons a:hover {
+    background: rgba(255,255,255,0.3);
+    transform: scale(1.05);
+  }
+
+  /* 右上角金幣與購物車 */
+  #topRight {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 20;
+  }
+  #coins, #cartBtn {
+    background: rgba(255,255,255,0.15);
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #cartBtn:hover { background: rgba(255,255,255,0.3); }
+
+  .store-section {
+    padding: 40px 30px;
+  }
+  h2 {
+    border-left: 4px solid #00bcd4;
+    padding-left: 10px;
+    margin-bottom: 20px;
+  }
+
+  /* 架子外觀 */
+  .shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 25px;
+    background: #182b3a;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: inset 0 8px 0 #1f3f58, inset 0 -8px 0 #1f3f58;
+  }
+  .item {
+    background: #22384a;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .item:hover { transform: translateY(-3px); background: #2d4c67; }
+
+  .emoji {
+    font-size: 60px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .locked::before {
+    content: "🔒";
+    font-size: 28px;
+    position: absolute;
+    top: 8px;
+    left: 10px;
+  }
+
+  .locked .emoji {
+    filter: grayscale(100%);
+    opacity: 0.5;
+  }
+
+  .price {
+    font-weight: bold;
+    color: #ffd700;
+    margin-top: 6px;
+  }
+
+  /* 彈窗 */
+  #detailModal, #cartModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+  }
+  .modal-content {
+    background: #1a2a38;
+    border-radius: 16px;
+    padding: 30px;
+    text-align: center;
+    width: 340px;
+    position: relative;
+  }
+  .modal-content h3 { margin: 10px 0; }
+  .modal-content button {
+    margin: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .buy { background: #4caf50; color: white; }
+  .cancel { background: #f44336; color: white; }
+  .cart { background: #ff9800; color: white; }
+  #closeModal, #closeCart {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 22px;
+    cursor: pointer;
+  }
+  #cartList {
+    text-align: left;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-top: 20px;
+  }
+  #cartList p {
+    background: rgba(255,255,255,0.1);
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin: 6px 0;
+  }
+  #emptyMsg { color: #ccc; }
+</style>
+</head>
+<body>
+
+<!-- 🔹返回按鈕 -->
+<div class="nav-buttons">
+  <a href="Homepage.html">← 返回首頁</a>
+</div>
+
+<!-- 💰 金幣與購物車 -->
+<div id="topRight">
+  <div id="coins">💰 $800</div>
+  <div id="cartBtn">🛒 購物車</div>
+</div>
+
+<!-- 🎮 標題置中 -->
+<header>
+  <h1>🎮 遊戲商店</h1>
+</header>
+
+<!-- 場景區 -->
+<div class="store-section">
+  <h2>🕹️ 場景架</h2>
+  <div class="shelf" id="sceneShelf">
+    <div class="item locked" data-name="森林探險" data-price="950" data-type="scene">
+      <span class="emoji">🌲</span>
+      <h3>森林探險</h3>
+      <p class="price">$950</p>
+    </div>
+    <div class="item locked" data-name="冰原跑酷" data-price="200" data-type="scene">
+      <span class="emoji">❄️</span>
+      <h3>冰原跑酷</h3>
+      <p class="price">$200</p>
+    </div>
+    <div class="item locked" data-name="沙漠冒險" data-price="180" data-type="scene">
+      <span class="emoji">🏜️</span>
+      <h3>沙漠冒險</h3>
+      <p class="price">$180</p>
+    </div>
+  </div>
+</div>
+
+<!-- 角色外觀區 -->
+<div class="store-section">
+  <h2>🍎 角色外觀</h2>
+  <div class="shelf" id="characterShelf">
+    <div class="item locked" data-name="蘋果17" data-price="29900" data-type="character">
+      <span class="emoji">🍎</span>
+      <h3>蘋果17</h3>
+      <p class="price">$29900</p>
+    </div>
+    <div class="item locked" data-name="香蕉" data-price="140" data-type="character">
+      <span class="emoji">🍌</span>
+      <h3>香蕉</h3>
+      <p class="price">$140</p>
+    </div>
+    <div class="item locked" data-name="番茄" data-price="160" data-type="character">
+      <span class="emoji">🍅</span>
+      <h3>番茄</h3>
+      <p class="price">$160</p>
+    </div>
+  </div>
+</div>
+
+<!-- 詳情視窗 -->
+<div id="detailModal">
+  <div class="modal-content">
+    <span id="closeModal">✖</span>
+    <h3 id="itemTitle"></h3>
+    <p id="itemType"></p>
+    <p id="itemPrice"></p>
+    <button class="buy">購買</button>
+    <button class="cancel">取消</button>
+    <button class="cart">加入購物車</button>
+  </div>
+</div>
+
+<!-- 購物車視窗 -->
+<div id="cartModal">
+  <div class="modal-content">
+    <span id="closeCart">✖</span>
+    <h3>🛒 我的購物車</h3>
+    <div id="cartList"></div>
+    <button class="buy" id="checkoutBtn">結帳</button>
+  </div>
+</div>
+
+<script>
+let coins = 800;
+let cart = [];
+const coinsDisplay = document.getElementById('coins');
+const modal = document.getElementById('detailModal');
+const cartModal = document.getElementById('cartModal');
+const itemTitle = document.getElementById('itemTitle');
+const itemType = document.getElementById('itemType');
+const itemPrice = document.getElementById('itemPrice');
+let currentItem = null;
+
+// 點擊商品開啟詳情
+document.querySelectorAll('.item').forEach(item => {
+  item.addEventListener('click', () => {
+    currentItem = {
+      element: item,
+      name: item.dataset.name,
+      price: parseInt(item.dataset.price),
+      type: item.dataset.type
+    };
+    itemTitle.textContent = currentItem.name;
+    itemType.textContent = currentItem.type === "scene" ? "類型：場景" : "類型：角色外觀";
+    itemPrice.textContent = `價格：$${currentItem.price}`;
+    modal.style.display = 'flex';
+  });
+});
+
+document.getElementById('closeModal').onclick = () => modal.style.display = 'none';
+document.getElementById('closeCart').onclick = () => cartModal.style.display = 'none';
+
+// 購買
+modal.querySelector('.buy').onclick = () => {
+  if(coins >= currentItem.price) {
+    coins -= currentItem.price;
+    coinsDisplay.textContent = `💰 $${coins}`;
+    alert(`已購買：${currentItem.name} 孩子愛吃`);
+    currentItem.element.classList.remove('locked');
+  } else {
+    alert("你太窮了！請去運動賺錢！");
+  }
+  modal.style.display = 'none';
+};
+
+// 加入購物車
+modal.querySelector('.cart').onclick = () => {
+  cart.push(currentItem);
+  alert(`已加入購物車：${currentItem.name}`);
+  modal.style.display = 'none';
+};
+
+// 取消
+modal.querySelector('.cancel').onclick = () => modal.style.display = 'none';
+
+// 查看購物車
+document.getElementById('cartBtn').onclick = () => {
+  cartModal.style.display = 'flex';
+  const list = document.getElementById('cartList');
+  list.innerHTML = '';
+  if(cart.length === 0){
+    list.innerHTML = '<p id="emptyMsg">怎麼可以這樣！目前購物車是空的。</p>';
+  } else {
+    cart.forEach((item,i)=>{
+      list.innerHTML += `<p>${i+1}. ${item.name} - $${item.price}</p>`;
+    });
+  }
+};
+
+// 結帳
+document.getElementById('checkoutBtn').onclick = () => {
+  const total = cart.reduce((sum,i)=>sum+i.price,0);
+  if(total===0) return alert("購物車是空的！");
+  if(coins >= total){
+    coins -= total;
+    coinsDisplay.textContent = `💰 $${coins}`;
+    alert(`成功購買 ${cart.length} 項商品！剩餘金幣 $${coins}`);
+    cart.forEach(i => i.element.classList.remove('locked'));
+    cart = [];
+    document.getElementById('cartList').innerHTML = '<p id="emptyMsg">目前購物車是空的。</p>';
+  } else {
+    alert("金幣不足，無法結帳！請認真運動賺錢！");
+  }
+};
+</script>
+</body>
+</html>

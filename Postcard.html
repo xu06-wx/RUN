@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Fruit Postcard 抽卡機 🍎</title>
+<style>
+  body {
+    margin: 0;
+    background: radial-gradient(circle at top, #9be7ff, #2c3e50);
+    font-family: "Microsoft JhengHei", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  /* 🔹返回按鈕區域 */
+  .nav-buttons {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .nav-buttons a {
+    background: rgba(255,255,255,0.8);
+    color: #333;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: background 0.2s;
+  }
+
+  .nav-buttons a:hover {
+    background: #e0f4ff;
+  }
+
+  h1 {
+    color: #fff;
+    font-size: 32px;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  #drawBtn, #downloadBtn {
+    padding: 12px 28px;
+    font-size: 20px;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(45deg, #8cd3ff, #a5e3ff);
+    color: #fff;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: transform 0.2s;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+  }
+
+  #drawBtn:hover, #downloadBtn:hover {
+    transform: scale(1.05);
+  }
+
+  #printer {
+    position: relative;
+    width: 600px;
+    height: 220px;
+    background: #666;
+    border-radius: 10px;
+    margin-top: 40px;
+    overflow: hidden;
+    display: none;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  #postcard {
+    position: absolute;
+    left: -620px;
+    width: 600px;
+    height: 200px;
+    background: #fff;
+    border-radius: 8px;
+    display: flex;
+    overflow: hidden;
+    border: 3px solid #ccc;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: left 3s ease;
+  }
+
+  .left {
+    width: 65%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at top, #a2e0ff, #354f70);
+    position: relative;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  .right {
+    width: 35%;
+    background: #fffbe9;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+  }
+
+  .logo {
+    align-self: flex-start;
+    font-weight: bold;
+    color: #58b4ff;
+    font-size: 18px;
+  }
+
+  .stamp {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #7b5cff;
+    color: #fff;
+    width: 60px;
+    height: 80px;
+    font-size: 22px;
+    text-align: center;
+    border: 2px solid #fff;
+    border-radius: 4px;
+    transform: rotate(5deg);
+  }
+
+  .fruit {
+    font-size: 72px;
+    position: relative;
+  }
+
+  .eye {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #000;
+    border-radius: 50%;
+  }
+  .eye.left { top: 25px; left: 20px; }
+  .eye.right { top: 25px; right: 20px; }
+
+  .limb {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #000;
+    border-radius: 50%;
+  }
+  .limb.arm-left { left: 10px; top: 60px; }
+  .limb.arm-right { right: 10px; top: 60px; }
+  .limb.leg-left { left: 25px; bottom: 15px; }
+  .limb.leg-right { right: 25px; bottom: 15px; }
+
+  .aurora {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at 30% 20%, rgba(144,238,255,0.7), transparent 60%),
+                radial-gradient(circle at 70% 80%, rgba(255,160,255,0.5), transparent 60%);
+    mix-blend-mode: screen;
+    z-index: 0;
+  }
+
+  .right .date {
+    text-align: right;
+    color: #555;
+    font-size: 16px;
+  }
+
+  canvas { display: none; }
+</style>
+</head>
+<body>
+
+<!-- 🔹返回按鈕 -->
+<div class="nav-buttons">
+  <a href="Homepage.html">← 返回首頁</a>
+  <a href="Game.html">🎮 返回遊戲</a>
+</div>
+
+<h1>🌌 抽出你的水果明信片！</h1>
+<button id="drawBtn">🎰 抽卡！</button>
+
+<div id="printer">
+  <div id="postcard">
+    <div class="left">
+      <div class="aurora"></div>
+      <div id="fruitCharacter" style="z-index:1;"></div>
+      <div id="fruitName" style="margin-top:8px;font-size:20px;"></div>
+    </div>
+    <div class="right">
+      <div class="logo">RUN!</div>
+      <div class="stamp">2025</div>
+      <div class="date" id="dateText"></div>
+    </div>
+  </div>
+</div>
+
+<button id="downloadBtn">💾 下載明信片</button>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+const fruits = [
+  { emoji:"🍎", name:"蘋果仔" },
+  { emoji:"🍌", name:"香蕉君" },
+  { emoji:"🍇", name:"葡萄團" },
+  { emoji:"🍉", name:"西瓜寶" },
+  { emoji:"🍊", name:"橘子丸" }
+];
+const auroraColors = [
+  "radial-gradient(circle at top left, #9be7ff, #2c3e50)",
+  "radial-gradient(circle at top, #c2a3ff, #314870)",
+  "radial-gradient(circle at bottom, #a7ffd0, #00696f)",
+  "radial-gradient(circle at top right, #ffd1f3, #3c4573)"
+];
+const printer = document.getElementById("printer");
+const postcard = document.getElementById("postcard");
+const drawBtn = document.getElementById("drawBtn");
+const fruitCharacter = document.getElementById("fruitCharacter");
+const fruitName = document.getElementById("fruitName");
+const dateText = document.getElementById("dateText");
+const downloadBtn = document.getElementById("downloadBtn");
+
+function getToday(){
+  const d=new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+drawBtn.addEventListener("click", ()=>{
+  const fruit = fruits[Math.floor(Math.random()*fruits.length)];
+  const aurora = auroraColors[Math.floor(Math.random()*auroraColors.length)];
+
+  printer.style.display="flex";
+  postcard.style.left="-620px";
+  downloadBtn.style.display="none";
+
+  document.querySelector(".left").style.background=aurora;
+  fruitCharacter.innerHTML=`
+    <div class="fruit">${fruit.emoji}
+      <div class="eye left"></div>
+      <div class="eye right"></div>
+      <div class="limb arm-left"></div>
+      <div class="limb arm-right"></div>
+      <div class="limb leg-left"></div>
+      <div class="limb leg-right"></div>
+    </div>
+  `;
+  fruitName.textContent=fruit.name;
+  dateText.textContent=`📅 ${getToday()}`;
+
+  setTimeout(()=>{ postcard.style.left="0px"; },500);
+  setTimeout(()=>{ downloadBtn.style.display="block"; },3500);
+});
+
+downloadBtn.addEventListener("click",()=>{
+  html2canvas(postcard).then(canvas=>{
+    const link=document.createElement("a");
+    link.download="fruit-postcard.png";
+    link.href=canvas.toDataURL("image/png");
+    link.click();
+  });
+});
+</script>
+
+</body>
+</html>

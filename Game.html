@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Select</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Microsoft JhengHei", sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      text-align: center;
+    }
+
+    /* 🔹返回按鈕樣式 */
+    .nav-buttons {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .nav-buttons a {
+      text-decoration: none;
+      color: white;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 14px;
+      transition: 0.3s;
+    }
+
+    .nav-buttons a:hover {
+      background: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      font-size: 36px;
+      letter-spacing: 2px;
+    }
+
+    .btn-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+    }
+
+    .game-btn {
+      background: #3c8dbc;
+      color: white;
+      text-decoration: none;
+      padding: 15px 50px;
+      border-radius: 12px;
+      font-size: 20px;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+
+    .game-btn:hover {
+      background: #5dade2;
+      transform: translateY(-5px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    footer {
+      position: absolute;
+      bottom: 20px;
+      font-size: 14px;
+      color: #dfe6e9;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 🔹返回按鈕 -->
+  <div class="nav-buttons">
+    <a href="Homepage.html">← 返回首頁</a>
+  </div>
+
+  <h1>🎮 選擇你的遊戲模式</h1>
+
+  <div class="btn-container">
+    <a class="game-btn" href="Game/ReflexRidge.html">🏔️ Reflex Ridge</a>
+    <a class="game-btn" href="Game/River.html">🌊 River Adventure</a>
+    <a class="game-btn" href="Game/UnderTheSea.html">🐠 Under The Sea</a>
+  </div>
+
+  <footer>© 2025 Your Project Name</footer>
+
+</body>
+</html>
