@@ -1,0 +1,208 @@
+<!DOCTYPE html> 
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Aqua Fix VR Mode – 爆裂扣分版（優化圈圈數）</title>
+<style>
+  body{margin:0;overflow:hidden;background:#000;font-family:"Microsoft JhengHei",sans-serif;color:#fff;}
+  #score,#timer{position:absolute;top:10px;background:rgba(0,0,0,.5);padding:6px 12px;border-radius:8px;font-size:20px;z-index:3}
+  #score{left:10px}#timer{right:10px}
+  video,canvas{position:absolute;top:0;left:0;width:100%;height:auto}
+</style>
+</head>
+<body>
+<div id="score">分數：0</div>
+<div id="timer">剩餘時間：60秒</div>
+<video id="video" autoplay playsinline muted></video>
+<canvas id="gameCanvas"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+
+<script>
+const video=document.getElementById("video");
+const canvas=document.getElementById("gameCanvas");
+const ctx=canvas.getContext("2d");
+const scoreEl=document.getElementById("score");
+const timerEl=document.getElementById("timer");
+canvas.width=640;canvas.height=480;
+
+let score=0,timeLeft=60;
+let holes=[],sharks=[],bubbles=[];
+let handsData=[],poseLandmarks=[];
+const holeRadius=35,dangerTime=4;
+
+//--- 產生破洞（新增上限限制） ---
+function spawnHole(){
+  // 限制同時最多出現 3 個圈圈
+  if(holes.length >= 3) return;
+
+  const x=Math.random()*(canvas.width-2*holeRadius)+holeRadius;
+  const y=Math.random()*(canvas.height-2*holeRadius)+holeRadius;
+  holes.push({x,y,created:Date.now(),danger:false,dangerTriggered:false});
+}
+
+//--- 鯊魚生成 ---
+function spawnShark(){
+  sharks.push({x:-120,y:Math.random()*canvas.height,speed:5});
+}
+
+//--- 氣泡 ---
+function addBubble(x,y,strength,color="rgba(200,230,255,0.7)"){
+  for(let i=0;i<strength;i++){
+    bubbles.push({x:x+Math.random()*20-10,y:y+Math.random()*10-5,
+      r:Math.random()*3+2,vy:-1-Math.random()*1.5,life:60,color});
+  }
+}
+
+//--- 倒數 ---
+function startTimer(){
+  const timer=setInterval(()=>{
+    timeLeft--;
+    timerEl.textContent=`剩餘時間：${timeLeft}秒`;
+    if(timeLeft<=0){clearInterval(timer);alert(`時間到！你的分數是 ${score}`);location.reload();}
+  },1000);
+}
+
+//--- 主畫面 ---
+function draw(){
+  ctx.save();
+  ctx.scale(-1,1);
+  ctx.drawImage(video,-canvas.width,0,canvas.width,canvas.height);
+  ctx.restore();
+
+  ctx.fillStyle="rgba(0,50,100,0.25)";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  const now=Date.now();
+
+  //--- 破洞漸變 ---
+  holes.forEach((hole,index)=>{
+    const age=(now-hole.created)/1000;
+    let t=Math.min(age/dangerTime,1);
+    const r=Math.floor(0+(255-0)*t);
+    const g=Math.floor(150-150*t);
+    const b=Math.floor(255-50*t);
+    const color=`rgba(${r},${g},${b},0.6)`;
+
+    const flicker=t>0.8?(Math.sin(now/100)*0.5+0.5)*0.4+0.6:1;
+    ctx.globalAlpha=flicker;
+    ctx.beginPath();
+    ctx.arc(hole.x,hole.y,holeRadius,0,Math.PI*2);
+    ctx.fillStyle=color;
+    ctx.fill();
+    ctx.strokeStyle="#fff";
+    ctx.lineWidth=2;
+    ctx.stroke();
+    ctx.globalAlpha=1;
+
+    // 氣泡提示（越紅越多）
+    if(t>0.5)addBubble(hole.x,hole.y,Math.ceil(t*2));
+
+    // 若超時沒修好 → 扣分並爆裂
+    if(t>=1){
+      score=Math.max(0,score-1);
+      scoreEl.textContent="分數："+score;
+      addBubble(hole.x,hole.y,15,"rgba(255,80,80,0.9)");
+      holes.splice(index,1);
+      spawnShark();
+      spawnHole(); // 補一個新圈圈
+    }
+  });
+
+  //--- 氣泡動畫 ---
+  bubbles.forEach((b,i)=>{
+    ctx.beginPath();
+    ctx.arc(b.x,b.y,b.r,0,Math.PI*2);
+    ctx.fillStyle=b.color;
+    ctx.fill();
+    b.y+=b.vy;
+    b.life--;
+    if(b.life<=0)bubbles.splice(i,1);
+  });
+
+  //--- 骨架人 ---
+  if(poseLandmarks.length>0){
+    const mirroredPose=poseLandmarks.map(p=>({x:(1-p.x)*canvas.width,y:p.y*canvas.height}));
+    drawConnectors(ctx,mirroredPose,Pose.POSE_CONNECTIONS,{color:"#00ffcc",lineWidth:3});
+    drawLandmarks(ctx,mirroredPose,{color:"#ffffff",radius:3});
+  }
+
+  //--- 手骨架 ---
+  handsData.forEach(hand=>{
+    const mirrored=hand.map(p=>({x:(1-p.x)*canvas.width,y:p.y*canvas.height}));
+    drawConnectors(ctx,mirrored,Hands.HAND_CONNECTIONS,{color:"#ffff00",lineWidth:2});
+    drawLandmarks(ctx,mirrored,{color:"#ffcc00",radius:4});
+  });
+
+  //--- 鯊魚 ---
+  sharks.forEach((shark,i)=>{
+    shark.x+=shark.speed;
+    ctx.beginPath();
+    ctx.moveTo(shark.x,shark.y);
+    ctx.lineTo(shark.x-100,shark.y-35);
+    ctx.lineTo(shark.x-100,shark.y+35);
+    ctx.closePath();
+    ctx.fillStyle="rgba(160,160,255,0.9)";
+    ctx.fill();
+    if(shark.x>canvas.width+150)sharks.splice(i,1);
+  });
+
+  //--- 修補判定 ---
+  holes.forEach((hole,index)=>{
+    handsData.forEach(hand=>{
+      let avgX=0,avgY=0;
+      hand.forEach(p=>{avgX+=(1-p.x)*canvas.width;avgY+=p.y*canvas.height;});
+      avgX/=hand.length;avgY/=hand.length;
+      const dx=avgX-hole.x,dy=avgY-hole.y;
+      const dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<holeRadius){
+        score++;
+        scoreEl.textContent="分數："+score;
+        addBubble(hole.x,hole.y,10);
+        holes.splice(index,1);
+        spawnHole(); // 補一個新的
+      }
+    });
+  });
+
+  requestAnimationFrame(draw);
+}
+
+//--- Mediapipe Hands ---
+const hands=new Hands({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+hands.onResults(r=>{handsData=r.multiHandLandmarks||[]});
+
+//--- Mediapipe Pose ---
+const pose=new Pose({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/pose/${f}`});
+pose.setOptions({modelComplexity:0,smoothLandmarks:true,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+pose.onResults(r=>{poseLandmarks=r.poseLandmarks||[]});
+
+async function startCamera(){
+  const stream=await navigator.mediaDevices.getUserMedia({video:true});
+  video.srcObject=stream;await video.play();
+  const camera=new Camera(video,{
+    onFrame:async()=>{await hands.send({image:video});await pose.send({image:video});},
+    width:640,height:480
+  });
+  camera.start();
+
+  // 初始化 2~3 個圈圈
+  for(let i=0;i<3;i++)spawnHole();
+
+  // 每 7 秒生成一個新圈圈（若未達上限）
+  setInterval(spawnHole,7000);
+  // 每 10 秒生成一條鯊魚
+  setInterval(spawnShark,10000);
+
+  startTimer();
+  draw();
+}
+startCamera();
+</script>
+</body>
+</html>
